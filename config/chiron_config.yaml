@@ -1,0 +1,27 @@
+# CHIRON Configuration
+# ORION Subsystem C - Motor Cortex
+# Phase C0: MuJoCo backend, no ROS 2
+
+chiron:
+  port: 8200
+  host: "0.0.0.0"
+  state_publish_rate_hz: 50
+  command_timeout_sec: 5.0
+
+backends:
+  active: "mujoco"
+
+  mujoco:
+    model_file: "models/mujoco_menagerie/franka_emika_panda/workspace.xml"
+    render: false
+    dt: 0.002  # 500 Hz physics
+
+  genesis:
+    scene_file: "scenes/so_arm_101.py"
+    render: true
+    dt: 0.002
+
+  lerobot:
+    port: "/dev/ttyUSB0"
+    baudrate: 1000000
+    servo_ids: [1, 2, 3, 4, 5, 6]

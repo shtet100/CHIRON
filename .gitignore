@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# MuJoCo Menagerie (large, pulled separately)
+models/mujoco_menagerie/
+
+# Conda / venv
+.conda/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Recorded data (large)
+recordings/
+trajectories/
+
+# Gesture/animation memory (user-specific)
+*.json
+!config/chiron_config.yaml

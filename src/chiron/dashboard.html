@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHIRON - ORION Motor Cortex</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e2d4a;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --green: #10b981;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --font: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .logo span {
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 0;
+    margin-left: 8px;
+  }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .status-badge.connected {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .status-badge.disconnected {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--red);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-badge.connected .status-dot {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── Layout ─────────────────────────────────── */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1px;
+    background: var(--border);
+    min-height: calc(100vh - 57px);
+  }
+
+  .panel {
+    background: var(--bg);
+    padding: 20px 24px;
+  }
+
+  .panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── Joint State Panel ──────────────────────── */
+  .joint-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .joint-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px 70px;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+  }
+
+  .joint-name {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .joint-bar-container {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .joint-bar-zero {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--text-dim);
+    opacity: 0.3;
+  }
+
+  .joint-bar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: left 0.06s linear, width 0.06s linear;
+    opacity: 0.8;
+  }
+
+  .joint-val {
+    text-align: right;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .joint-vel {
+    text-align: right;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .joint-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px 70px;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .joint-header span:nth-child(3),
+  .joint-header span:nth-child(4) {
+    text-align: right;
+  }
+
+  /* ── EE + Gripper Panel ─────────────────────── */
+  .ee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .ee-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .ee-card-title {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .ee-values {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ee-label {
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  .ee-val {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gripper-bar-outer {
+    height: 10px;
+    background: var(--surface2);
+    border-radius: 5px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .gripper-bar-inner {
+    height: 100%;
+    background: var(--green);
+    border-radius: 5px;
+    transition: width 0.1s ease;
+  }
+
+  /* ── Command Panel ──────────────────────────── */
+  .cmd-section {
+    margin-bottom: 20px;
+  }
+
+  .cmd-section-title {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .slider-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .slider-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 60px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slider-label {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+
+  .slider-val {
+    font-size: 11px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn:hover {
+    background: var(--surface2);
+    border-color: var(--accent);
+  }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .btn.primary:hover {
+    background: #2563eb;
+  }
+
+  .btn.danger {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .btn.danger:hover {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .btn.success {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* ── Log Panel ──────────────────────────────── */
+  .log-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    height: 260px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+
+  .log-container::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .log-container::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+  }
+
+  .log-entry {
+    display: flex;
+    gap: 8px;
+  }
+
+  .log-time {
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .log-msg { color: var(--text); }
+  .log-msg.info { color: var(--accent); }
+  .log-msg.success { color: var(--green); }
+  .log-msg.warn { color: var(--orange); }
+  .log-msg.error { color: var(--red); }
+
+  /* ── Responsive ─────────────────────────────── */
+  @media (max-width: 900px) {
+    .main {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">CHIRON<span>ORION Motor Cortex</span></div>
+    <div id="statusBadge" class="status-badge disconnected">
+      <div class="status-dot"></div>
+      <span id="statusText">Disconnected</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="backendInfo">-</span>
+    <span>|</span>
+    <span id="fpsCounter">0 Hz</span>
+    <span>|</span>
+    <span id="robotName">-</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Joint States -->
+  <div class="panel">
+    <div class="panel-title">Joint States</div>
+    <div class="joint-header">
+      <span>Joint</span>
+      <span>Position</span>
+      <span>Rad</span>
+      <span>Vel</span>
+    </div>
+    <div id="jointGrid" class="joint-grid"></div>
+  </div>
+
+  <!-- End-Effector + Gripper -->
+  <div class="panel">
+    <div class="panel-title">End-Effector &amp; Gripper</div>
+    <div class="ee-grid">
+      <div class="ee-card">
+        <div class="ee-card-title">Position (m)</div>
+        <div class="ee-values">
+          <div class="ee-row"><span class="ee-label">X</span><span class="ee-val" id="eeX">-</span></div>
+          <div class="ee-row"><span class="ee-label">Y</span><span class="ee-val" id="eeY">-</span></div>
+          <div class="ee-row"><span class="ee-label">Z</span><span class="ee-val" id="eeZ">-</span></div>
+        </div>
+      </div>
+      <div class="ee-card">
+        <div class="ee-card-title">Orientation (quat)</div>
+        <div class="ee-values">
+          <div class="ee-row"><span class="ee-label">x</span><span class="ee-val" id="eeQx">-</span></div>
+          <div class="ee-row"><span class="ee-label">y</span><span class="ee-val" id="eeQy">-</span></div>
+          <div class="ee-row"><span class="ee-label">z</span><span class="ee-val" id="eeQz">-</span></div>
+          <div class="ee-row"><span class="ee-label">w</span><span class="ee-val" id="eeQw">-</span></div>
+        </div>
+      </div>
+      <div class="ee-card" style="grid-column: 1 / -1;">
+        <div class="ee-card-title">Gripper - <span id="gripperLabel">Closed (0%)</span></div>
+        <div class="gripper-bar-outer">
+          <div class="gripper-bar-inner" id="gripperBar" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command Panel -->
+  <div class="panel">
+    <div class="panel-title">Command</div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title">Joint Targets (rad)</div>
+      <div id="sliderGrid" class="slider-grid"></div>
+
+      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <div class="slider-row">
+          <span class="slider-label" style="color: var(--text-dim);">Duration</span>
+          <input type="range" id="durationSlider" min="0.5" max="10" step="0.5" value="2.0"
+                 oninput="document.getElementById('durationVal').textContent = parseFloat(this.value).toFixed(1) + 's'">
+          <span class="slider-val" id="durationVal">2.0s</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn primary" onclick="sendJointCommand()">Send</button>
+        <button class="btn" onclick="resetSliders()">Zero All</button>
+        <button class="btn" onclick="readCurrentToSliders()">Read Current</button>
+      </div>
+    </div>
+
+    <div id="trajStatus" class="cmd-section" style="display: none;">
+      <div class="cmd-section-title">Trajectory</div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden;">
+          <div id="trajBar" style="height: 100%; width: 0%; background: var(--accent); border-radius: 3px; transition: width 0.06s linear;"></div>
+        </div>
+        <span id="trajPct" style="font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; min-width: 36px; text-align: right;">0%</span>
+      </div>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title">Gripper</div>
+      <div class="btn-row">
+        <button class="btn success" onclick="sendGripper('open')">Open</button>
+        <button class="btn" onclick="sendGripper('close')">Close</button>
+      </div>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title">Pick and Place</div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-dim); min-width: 50px;">Object</span>
+        <select id="pickObject" style="flex: 1; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-family: var(--font); font-size: 11px;">
+          <option value="red_cube">Red Cube</option>
+          <option value="green_cylinder">Green Cylinder</option>
+          <option value="blue_sphere">Blue Sphere</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-dim); min-width: 50px;">Place X</span>
+        <input type="range" id="placeX" min="0.25" max="0.65" step="0.01" value="0.40"
+               style="flex: 1;" oninput="document.getElementById('placeXVal').textContent = parseFloat(this.value).toFixed(2); moveTarget()">
+        <span id="placeXVal" style="font-size: 11px; color: var(--text-dim); min-width: 30px; text-align: right;">0.40</span>
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-dim); min-width: 50px;">Place Y</span>
+        <input type="range" id="placeY" min="-0.30" max="0.30" step="0.01" value="-0.30"
+               style="flex: 1;" oninput="document.getElementById('placeYVal').textContent = parseFloat(this.value).toFixed(2); moveTarget()">
+        <span id="placeYVal" style="font-size: 11px; color: var(--text-dim); min-width: 30px; text-align: right;">-0.30</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="sendPickPlace()">Execute Pick & Place</button>
+        <button class="btn danger" onclick="sendAbort()">Abort</button>
+      </div>
+      <div id="seqStatus" style="display: none; margin-top: 10px; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span id="seqPhase" style="font-size: 11px; color: var(--accent); font-weight: 600;">IDLE</span>
+          <span id="seqPct" style="font-size: 11px; color: var(--text-dim);">0%</span>
+        </div>
+        <div style="height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden;">
+          <div id="seqBar" style="height: 100%; width: 0%; background: var(--green); border-radius: 3px; transition: width 0.1s linear;"></div>
+        </div>
+        <div id="seqMsg" style="font-size: 10px; color: var(--text-dim); margin-top: 4px;"></div>
+      </div>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title">Simulation</div>
+      <div class="btn-row">
+        <button class="btn" onclick="sendReset()">Reset Scene</button>
+        <button class="btn danger" onclick="sendEstop()">Emergency Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="panel">
+    <div class="panel-title">Event Log</div>
+    <div id="logContainer" class="log-container"></div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────
+let stateWs = null;
+let cmdWs = null;
+let robotInfo = null;
+let lastState = null;
+let frameCount = 0;
+let fpsInterval = null;
+
+// ── Init ──────────────────────────────────────────
+window.addEventListener('load', async () => {
+  log('Dashboard loaded', 'info');
+  await fetchRobotInfo();
+  connectStateWs();
+  connectCmdWs();
+  fpsInterval = setInterval(updateFps, 1000);
+});
+
+// ── REST calls ────────────────────────────────────
+async function fetchRobotInfo() {
+  try {
+    const res = await fetch('/robot_info');
+    robotInfo = await res.json();
+    document.getElementById('robotName').textContent =
+      `${robotInfo.name} (${robotInfo.dof} DOF)`;
+    buildJointGrid(robotInfo);
+    buildSliders(robotInfo);
+    log(`Robot: ${robotInfo.name}, ${robotInfo.dof} DOF, gripper=${robotInfo.has_gripper}`, 'success');
+  } catch (e) {
+    log(`Failed to fetch robot info: ${e.message}`, 'error');
+  }
+
+  try {
+    const res = await fetch('/health');
+    const health = await res.json();
+    document.getElementById('backendInfo').textContent = health.backend || '-';
+  } catch (e) {}
+}
+
+// ── State WebSocket ───────────────────────────────
+function connectStateWs() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  stateWs = new WebSocket(`${proto}//${location.host}/ws/state`);
+
+  stateWs.onopen = () => {
+    setStatus(true);
+    log('State stream connected', 'success');
+  };
+
+  stateWs.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === 'state') {
+      lastState = msg.data;
+      frameCount++;
+      updateDisplay(msg.data);
+      if (msg.data.sequencer) {
+        updateSequencerStatus(msg.data.sequencer);
+      }
+    }
+  };
+
+  stateWs.onclose = () => {
+    setStatus(false);
+    log('State stream disconnected, reconnecting...', 'warn');
+    setTimeout(connectStateWs, 2000);
+  };
+
+  stateWs.onerror = () => {};
+}
+
+// ── Command WebSocket ─────────────────────────────
+function connectCmdWs() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  cmdWs = new WebSocket(`${proto}//${location.host}/ws/command`);
+
+  cmdWs.onopen = () => {
+    log('Command channel connected', 'info');
+  };
+
+  cmdWs.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === 'ack') {
+      const status = msg.success ? 'success' : 'error';
+      log(`ACK ${msg.command}: ${msg.success ? 'OK' : 'FAILED'}`, status);
+    } else if (msg.type === 'error') {
+      log(`Error: ${msg.message}`, 'error');
+    }
+  };
+
+  cmdWs.onclose = () => {
+    log('Command channel lost, reconnecting...', 'warn');
+    setTimeout(connectCmdWs, 2000);
+  };
+
+  cmdWs.onerror = () => {};
+}
+
+// ── Build UI ──────────────────────────────────────
+function buildJointGrid(info) {
+  const grid = document.getElementById('jointGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < info.dof; i++) {
+    const row = document.createElement('div');
+    row.className = 'joint-row';
+    row.innerHTML = `
+      <span class="joint-name">${info.joint_names[i]}</span>
+      <div class="joint-bar-container">
+        <div class="joint-bar-zero" id="jointZero${i}"></div>
+        <div class="joint-bar" id="jointBar${i}"></div>
+      </div>
+      <span class="joint-val" id="jointVal${i}">0.000</span>
+      <span class="joint-vel" id="jointVel${i}">0.000</span>
+    `;
+    grid.appendChild(row);
+
+    // Position the zero marker
+    const lo = info.joint_limits_lower[i];
+    const hi = info.joint_limits_upper[i];
+    const zeroFrac = (0 - lo) / (hi - lo);
+    const zeroEl = row.querySelector(`#jointZero${i}`);
+    zeroEl.style.left = `${Math.max(0, Math.min(100, zeroFrac * 100))}%`;
+  }
+}
+
+function buildSliders(info) {
+  const grid = document.getElementById('sliderGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < info.dof; i++) {
+    const lo = info.joint_limits_lower[i];
+    const hi = info.joint_limits_upper[i];
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    row.innerHTML = `
+      <span class="slider-label">${info.joint_names[i]}</span>
+      <input type="range" id="slider${i}" min="${lo}" max="${hi}" step="0.01" value="0"
+             oninput="document.getElementById('sliderVal${i}').textContent = parseFloat(this.value).toFixed(2)">
+      <span class="slider-val" id="sliderVal${i}">0.00</span>
+    `;
+    grid.appendChild(row);
+  }
+}
+
+// ── Update Display ────────────────────────────────
+function updateDisplay(data) {
+  if (!robotInfo) return;
+
+  // Joint positions + velocities
+  for (let i = 0; i < robotInfo.dof; i++) {
+    const pos = data.joint_positions[i];
+    const vel = data.joint_velocities[i];
+    const lo = robotInfo.joint_limits_lower[i];
+    const hi = robotInfo.joint_limits_upper[i];
+    const range = hi - lo;
+    const frac = (pos - lo) / range;
+    const zeroFrac = (0 - lo) / range;
+
+    // Bar: fill from zero to current position
+    const bar = document.getElementById(`jointBar${i}`);
+    if (frac >= zeroFrac) {
+      bar.style.left = `${zeroFrac * 100}%`;
+      bar.style.width = `${(frac - zeroFrac) * 100}%`;
+      bar.style.background = 'var(--accent)';
+    } else {
+      bar.style.left = `${frac * 100}%`;
+      bar.style.width = `${(zeroFrac - frac) * 100}%`;
+      bar.style.background = 'var(--orange)';
+    }
+
+    document.getElementById(`jointVal${i}`).textContent = pos.toFixed(3);
+    document.getElementById(`jointVel${i}`).textContent = vel.toFixed(3);
+  }
+
+  // End-effector
+  const ee = data.end_effector_pose;
+  if (ee) {
+    document.getElementById('eeX').textContent = ee.position[0].toFixed(4);
+    document.getElementById('eeY').textContent = ee.position[1].toFixed(4);
+    document.getElementById('eeZ').textContent = ee.position[2].toFixed(4);
+    document.getElementById('eeQx').textContent = ee.orientation[0].toFixed(4);
+    document.getElementById('eeQy').textContent = ee.orientation[1].toFixed(4);
+    document.getElementById('eeQz').textContent = ee.orientation[2].toFixed(4);
+    document.getElementById('eeQw').textContent = ee.orientation[3].toFixed(4);
+  }
+
+  // Gripper
+  const grip = data.gripper_state;
+  const pct = (grip * 100).toFixed(0);
+  const label = grip > 0.8 ? 'Open' : grip < 0.2 ? 'Closed' : 'Partial';
+  document.getElementById('gripperLabel').textContent = `${label} (${pct}%)`;
+  document.getElementById('gripperBar').style.width = `${pct}%`;
+
+  // Trajectory progress
+  const trajSection = document.getElementById('trajStatus');
+  if (data.trajectory_active) {
+    trajSection.style.display = 'block';
+    const progress = (data.trajectory_progress * 100).toFixed(0);
+    document.getElementById('trajBar').style.width = `${progress}%`;
+    document.getElementById('trajPct').textContent = `${progress}%`;
+  } else {
+    // Keep showing 100% briefly after completion, then hide
+    if (trajSection.style.display === 'block') {
+      document.getElementById('trajBar').style.width = '100%';
+      document.getElementById('trajPct').textContent = '100%';
+      clearTimeout(window._trajHideTimer);
+      window._trajHideTimer = setTimeout(() => {
+        trajSection.style.display = 'none';
+        document.getElementById('trajBar').style.width = '0%';
+      }, 800);
+    }
+  }
+}
+
+function updateFps() {
+  document.getElementById('fpsCounter').textContent = `${frameCount} Hz`;
+  frameCount = 0;
+}
+
+function setStatus(connected) {
+  const badge = document.getElementById('statusBadge');
+  const text = document.getElementById('statusText');
+  badge.className = `status-badge ${connected ? 'connected' : 'disconnected'}`;
+  text.textContent = connected ? 'Connected' : 'Disconnected';
+}
+
+// ── Commands ──────────────────────────────────────
+function sendJointCommand() {
+  if (!cmdWs || cmdWs.readyState !== WebSocket.OPEN || !robotInfo) return;
+  const positions = [];
+  for (let i = 0; i < robotInfo.dof; i++) {
+    positions.push(parseFloat(document.getElementById(`slider${i}`).value));
+  }
+  const duration = parseFloat(document.getElementById('durationSlider').value);
+  const cmd = { type: 'move_joints', data: { positions, duration } };
+  cmdWs.send(JSON.stringify(cmd));
+  log(`Sent: move_joints [${positions.map(p => p.toFixed(2)).join(', ')}] over ${duration.toFixed(1)}s`, 'info');
+}
+
+function sendGripper(state) {
+  if (!cmdWs || cmdWs.readyState !== WebSocket.OPEN) return;
+  cmdWs.send(JSON.stringify({ type: 'gripper', data: { state } }));
+  log(`Sent: gripper ${state}`, 'info');
+}
+
+function sendEstop() {
+  if (!cmdWs || cmdWs.readyState !== WebSocket.OPEN) return;
+  cmdWs.send(JSON.stringify({ type: 'emergency_stop' }));
+  log('EMERGENCY STOP sent', 'error');
+}
+
+function sendPickPlace() {
+  if (!cmdWs || cmdWs.readyState !== WebSocket.OPEN) return;
+  const obj = document.getElementById('pickObject').value;
+  const px = parseFloat(document.getElementById('placeX').value);
+  const py = parseFloat(document.getElementById('placeY').value);
+  const cmd = {
+    type: 'pick_place',
+    data: {
+      object: obj,
+      place_position: [px, py, 0.40]
+    }
+  };
+  cmdWs.send(JSON.stringify(cmd));
+  log(`Sent: pick ${obj} -> place at [${px.toFixed(2)}, ${py.toFixed(2)}]`, 'info');
+  document.getElementById('seqStatus').style.display = 'block';
+}
+
+function sendAbort() {
+  if (!cmdWs || cmdWs.readyState !== WebSocket.OPEN) return;
+  cmdWs.send(JSON.stringify({ type: 'abort_sequence' }));
+  log('Abort sent', 'warn');
+}
+
+function sendReset() {
+  fetch('/reset', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      log('Scene reset: ' + d.message, 'success');
+      document.getElementById('seqStatus').style.display = 'none';
+    })
+    .catch(e => log('Reset failed: ' + e, 'error'));
+}
+
+function moveTarget() {
+  const x = parseFloat(document.getElementById('placeX').value);
+  const y = parseFloat(document.getElementById('placeY').value);
+  fetch(`/move_target?x=${x}&y=${y}`, { method: 'POST' }).catch(() => {});
+}
+
+function updateSequencerStatus(seq) {
+  if (!seq) return;
+  const section = document.getElementById('seqStatus');
+  const phase = seq.phase;
+
+  if (phase === 'idle' || phase === 'no_sequencer') {
+    return;
+  }
+
+  section.style.display = 'block';
+  const pct = (seq.overall_progress * 100).toFixed(0);
+  document.getElementById('seqPhase').textContent = phase.toUpperCase().replace(/_/g, ' ');
+  document.getElementById('seqPct').textContent = `${pct}%`;
+  document.getElementById('seqBar').style.width = `${pct}%`;
+  document.getElementById('seqMsg').textContent = seq.message || '';
+
+  // Color the bar based on status
+  const bar = document.getElementById('seqBar');
+  if (phase === 'complete') {
+    bar.style.background = 'var(--green)';
+    document.getElementById('seqPhase').style.color = 'var(--green)';
+  } else if (phase === 'failed') {
+    bar.style.background = 'var(--red)';
+    document.getElementById('seqPhase').style.color = 'var(--red)';
+  } else {
+    bar.style.background = 'var(--accent)';
+    document.getElementById('seqPhase').style.color = 'var(--accent)';
+  }
+}
+
+function resetSliders() {
+  if (!robotInfo) return;
+  for (let i = 0; i < robotInfo.dof; i++) {
+    const slider = document.getElementById(`slider${i}`);
+    slider.value = 0;
+    document.getElementById(`sliderVal${i}`).textContent = '0.00';
+  }
+}
+
+function readCurrentToSliders() {
+  if (!robotInfo || !lastState) return;
+  for (let i = 0; i < robotInfo.dof; i++) {
+    const val = lastState.joint_positions[i];
+    const slider = document.getElementById(`slider${i}`);
+    slider.value = val;
+    document.getElementById(`sliderVal${i}`).textContent = val.toFixed(2);
+  }
+  log('Sliders set to current joint positions', 'info');
+}
+
+// ── Log ───────────────────────────────────────────
+function log(message, level = '') {
+  const container = document.getElementById('logContainer');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const now = new Date().toTimeString().split(' ')[0];
+  entry.innerHTML = `<span class="log-time">${now}</span><span class="log-msg ${level}">${message}</span>`;
+  container.appendChild(entry);
+  container.scrollTop = container.scrollHeight;
+
+  // Keep log manageable
+  while (container.children.length > 200) {
+    container.removeChild(container.firstChild);
+  }
+}
+</script>
+
+</body>
+</html>
