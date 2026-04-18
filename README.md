@@ -144,9 +144,9 @@ A browser-based control panel at `localhost:8200` provides:
 │                 FastAPI · Port 8200                  │
 │                                                      │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────┐   │
-│  │  Gripper     │  │    Grasp     │  │   Scene    │  │
-│  │  Model       │  │  Computer    │  │ Awareness  │  │
-│  │ (measured)   │  │ (profiling)  │  │ (spatial)  │  │
+│  │  Gripper    │  │    Grasp     │  │   Scene    │   │
+│  │  Model      │  │  Computer    │  │ Awareness  │   │
+│  │ (measured)  │  │ (profiling)  │  │ (spatial)  │   │
 │  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘   │
 │         │                │                │          │
 │  ┌──────▼────────────────▼────────────────▼──────┐   │
