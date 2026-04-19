@@ -10,9 +10,28 @@ The entire system runs in MuJoCo simulation at ~500 Hz with a live 3D viewer and
 
 ---
 
+<div align="center">
+
+https://github.com/user-attachments/assets/fea5ce70-a0a9-493a-b40d-57024c09aaf7
+
+*Pick-and-place with custom placement, stacking, and automatic stack decomposition. CHIRON detects the blue sphere blocking the cylinder and clears it autonomously before executing the command.*
+
+</div>
+
+---
+
 ## What It Does
 
 A pick-and-place command triggers a multi-stage intelligent pipeline: the gripper self-measures from the robot model, a cross-section profiler finds the optimal grip point on the target object, the scene analyzer computes collision-free transit corridors accounting for the full gripper envelope, and a 9-phase sequencer executes the motion with grasp verification, adaptive height selection, and automatic retry. If the target is buried in a stack, CHIRON decomposes the task and clears obstructing objects first.
+
+In the demo above:
+1. **Red cube** is picked and placed at the green target zone
+2. **Green target** is moved to a new position via the dashboard sliders
+3. **Green cylinder** is picked and placed at the new target
+4. **Blue sphere** is stacked on top of the cylinder
+5. **Green cylinder** is commanded to move — but the sphere is on top, so CHIRON automatically removes the sphere first, then picks the cylinder
+
+One command from the user. Multiple intelligent sub-steps from CHIRON.
 
 ---
 
@@ -70,7 +89,7 @@ After every operation, the arm returns to a neutral pose through a safe path: li
 
 ## Smart Task Decomposition
 
-When the target object is buried in a stack, CHIRON automatically plans a multi-step sequence.
+When the target object is buried in a stack, CHIRON automatically plans a multi-step sequence. This is visible at the end of the demo video.
 
 **Example:** Command "pick green_cylinder" when a sphere sits on top of it.
 
