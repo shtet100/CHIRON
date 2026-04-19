@@ -160,13 +160,13 @@ A browser-based control panel at `localhost:8200` provides:
 ```
 ┌──────────────────────────────────────────────────────┐
 │                   CHIRON Server                      │
-│                 FastAPI · Port 8200                   │
+│                 FastAPI · Port 8200                  │
 │                                                      │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐  │
-│  │  Gripper     │  │    Grasp     │  │   Scene    │  │
-│  │  Model       │  │  Computer    │  │ Awareness  │  │
-│  │ (measured)   │  │ (profiling)  │  │ (spatial)  │  │
-│  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘  │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐   │
+│  │  Gripper    │  │    Grasp     │  │   Scene    │   │
+│  │  Model      │  │  Computer    │  │ Awareness  │   │
+│  │ (measured)  │  │ (profiling)  │  │ (spatial)  │   │
+│  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘   │
 │         │                │                │          │
 │  ┌──────▼────────────────▼────────────────▼──────┐   │
 │  │              Pick-and-Place Sequencer         │   │
@@ -189,8 +189,8 @@ A browser-based control panel at `localhost:8200` provides:
                   WebSocket / REST
                          │
 ┌────────────────────────▼─────────────────────────────┐
-│              Live Dashboard + 3D Viewer               │
-│           Browser · localhost:8200 + MuJoCo           │
+│              Live Dashboard + 3D Viewer              │
+│           Browser · localhost:8200 + MuJoCo          │
 └──────────────────────────────────────────────────────┘
 ```
 
